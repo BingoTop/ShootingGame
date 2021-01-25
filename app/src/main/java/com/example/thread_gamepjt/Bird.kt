@@ -43,15 +43,14 @@ class Bird(res:Resources) {
         width /= 2
         height /= 2
 
-        width *= (GameView.screenRatioX).toInt()
-        height *= (GameView.screenRatioY).toInt()
+        width = (width * GameView.screenRatioX).toInt()
+        height = (height* GameView.screenRatioY).toInt()
         bird1 = Bitmap.createScaledBitmap(bird1,width,height,false)
         bird2 = Bitmap.createScaledBitmap(bird2,width,height,false)
         bird3 = Bitmap.createScaledBitmap(bird3,width,height,false)
         bird4 = Bitmap.createScaledBitmap(bird4,width,height,false)
         bird5 = Bitmap.createScaledBitmap(bird5,width,height,false)
         bird6 = Bitmap.createScaledBitmap(bird6,width,height,false)
-
 
         y = -height
 

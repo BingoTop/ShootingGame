@@ -14,14 +14,14 @@ class Bullet(res:Resources) {
     var height:Int
     var bullet :Bitmap
     init{
-        bullet = BitmapFactory.decodeResource(res,R.drawable.bullet)
+        bullet = BitmapFactory.decodeResource(res,R.drawable.energy_ball)
         width = bullet.width
         height = bullet.height
         width /= 4
         height /= 4
 
-        width *= screenRatioX.toInt()
-        height *= screenRatioY.toInt()
+        width = width * screenRatioX.toInt()
+        height = height *  screenRatioY.toInt()
 
         bullet = Bitmap.createScaledBitmap(bullet,width,height,false)
     }

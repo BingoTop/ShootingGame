@@ -11,14 +11,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
-        android:src="@drawable/background1" />
+        android:src="@drawable/home_background" />
 
     <TextView
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="80dp"
-        android:text="I have to fly"
+        android:text="Shoot Wyvern"
         android:textColor="#ffff"
         android:textSize="48sp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -29,7 +29,7 @@
         android:id="@+id/play"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Play"
+        android:text="Play!"
         android:textColor="#000000"
         android:textSize="64sp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -38,6 +38,13 @@
         app:layout_constraintTop_toBottomOf="@+id/textView"
         app:layout_constraintVertical_bias="0.094" />
 
+<!--    <Button-->
+<!--        android:background="#D51A1A"-->
+<!--        android:layout_width="300dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Play"-->
+<!--        android:textColor="#ffff"-->
+<!--        />-->
     <TextView
         android:textColor="#000000"
         android:id="@+id/highScoreTxt"

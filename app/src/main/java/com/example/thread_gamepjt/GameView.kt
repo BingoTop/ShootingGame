@@ -1,18 +1,28 @@
 package com.example.thread_gamepjt
 
 import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.MediaPlayer
+import android.media.SoundPool
+import android.os.Build
+import android.os.Handler
 import android.util.Log
 import android.view.MotionEvent
 import android.view.SurfaceView
-import java.lang.Exception
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.concurrent.thread
-import kotlin.concurrent.timerTask
 
 
 class GameView(context:Context,var screenX:Int,var screenY:Int):SurfaceView(context), Runnable {
@@ -28,8 +38,12 @@ class GameView(context:Context,var screenX:Int,var screenY:Int):SurfaceView(cont
     val birds:Array<Bird?>
     var random:Random
     var score:Int
+    var wasPaused = false
+    private val prefs: SharedPreferences
+    var timeLimit:Int = 30
 
     init{
+        prefs = context.getSharedPreferences("game", Context.MODE_PRIVATE)
         background1 = Background(screenX,screenY,resources)
         background2 = Background(screenX,screenY,resources)
         Log.d(TAG,"백그라운드 객체 생성 x: ${screenX}, y: ${screenY}")
@@ -40,7 +54,7 @@ class GameView(context:Context,var screenX:Int,var screenY:Int):SurfaceView(cont
         screenRatioY = 1080f / screenY
         flight = Flight(this,screenY,resources)
         bullets = ArrayList()
-        paint.setTextSize(128F)
+        paint.setTextSize(80F)
         paint.setColor(Color.BLACK)
         birds = arrayOfNulls(4)
         score = 0
@@ -49,26 +63,46 @@ class GameView(context:Context,var screenX:Int,var screenY:Int):SurfaceView(cont
             birds[i] = bird
         }
         random = Random()
-
+        thread1 = Thread(this)
     }
 
     companion object{
         var screenRatioX : Float = 0.0f
         var screenRatioY : Float = 0.0f
+
     }
-
-
     override fun run() {
-        while(isPlaying){
-            update()
-            draw()
-            sleep()
+        thread(start=true) {
+            while(timeLimit > 0){
+                timeLimit -= 1
+                Thread.sleep(1000)
+            }
+        }
+        CoroutineScope(IO).launch {
+            while(isPlaying){
+                val backgroundJob = launch {
+                    update()
+                }
+                val flightJob = launch {
+                    draw()
+                }
+                backgroundJob.join()
+                flightJob.join()
+                Thread.sleep(17)
+            }
         }
     }
 
-    fun update(){
-        background1.x =(background1.x -3 * screenRatioX).toInt()
-        background2.x =(background2.x -3 * screenRatioX).toInt()
+   suspend fun update(){
+        if(timeLimit == 0){
+            isPlaying = false
+            isGameOver = true
+            saveIfHighScore()
+            context.startActivity(Intent(context,MainActivity::class.java))
+            return
+        }
+        background1.x = (background1.x-3)  * (screenRatioX).toInt()
+        background2.x = (background2.x -3) * (screenRatioX).toInt()
         if (background1.x + background1.background.width < 0) {
             background1.x = screenX
         }
@@ -101,18 +135,15 @@ class GameView(context:Context,var screenX:Int,var screenY:Int):SurfaceView(cont
                         it.wasShot = true
                         score++
                     }
-
             }
-
         }
         trash.forEach {
             bullets.remove(it)
         }
         birds.forEach {
             it!!.x -= it!!.speed
-            Log.d(TAG,"it.x + it.width: ${it!!.x + it.width}")
             if(it.x + it.width < 0){
-                Log.d(TAG,"버드 위치가 스크린 밖에 있을 때")
+                Log.d(TAG,"와이번 스크린 이탈")
 //                if(!it.wasShot){
 //                    isGameOver = true
 //                    return
@@ -131,15 +162,16 @@ class GameView(context:Context,var screenX:Int,var screenY:Int):SurfaceView(cont
 //                return
 //            }
         }
-        Log.d(TAG,"UPDATE 끝")
+//        Log.d(TAG,"UPDATE 끝")
     }
-    fun draw(){
+    suspend fun draw(){
         if(holder.surface.isValid()){
             val canvas: Canvas = holder.lockCanvas()
             canvas.drawBitmap(background1.background,background1.x.toFloat(),background1.y.toFloat(),paint)
             canvas.drawBitmap(background2.background,background2.x.toFloat(),background2.y.toFloat(),paint)
             canvas.drawBitmap(flight!!.getFlight(),flight!!.x.toFloat(),flight!!.y.toFloat(),paint)
-            canvas.drawText("${score}",screenX/2f,164f,paint)
+            canvas.drawText("${score}점",screenX/2f,164f,paint)
+            canvas.drawText("${timeLimit}초",screenX/5f, 164f,paint)
             birds.forEach{
                 canvas.drawBitmap(it!!.getBird(),it.x.toFloat(),it.y.toFloat(),paint)
             }
@@ -157,35 +189,42 @@ class GameView(context:Context,var screenX:Int,var screenY:Int):SurfaceView(cont
             }
             holder.unlockCanvasAndPost(canvas)
         }
-        Log.d(TAG,"draw 끝")
+//        Log.d(TAG,"draw 끝")
     }
     fun sleep(){
         try {
-//            Log.d(TAG,"스레드 슬립")
             Thread.sleep(25)
         }catch(e:InterruptedException) {
             e.printStackTrace()
         }
     }
 
-
     fun resume(){
+        if(wasPaused){
+            Handler().postDelayed({
+                isPlaying = true
+                thread1!!.start()
+            },3000)
+        }else{
+            isPlaying = true
+            thread1!!.start()
+
+        }
+        wasPaused = false
         Log.d(TAG,"레슘 함수 실행")
-        thread1 = Thread(this)
-        isPlaying = true
-        thread1!!.start()
+
     }
 
     fun pause(){
         try {
             Log.d(TAG,"온 포즈 함수 실행")
             isPlaying = false
+            wasPaused = true
             thread1!!.join()
         }catch (e:InterruptedException){
             e.printStackTrace()
         }
     }
-
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when(event.action){
             MotionEvent.ACTION_DOWN ->{
@@ -208,5 +247,13 @@ class GameView(context:Context,var screenX:Int,var screenY:Int):SurfaceView(cont
         bullet.x = flight!!.x +flight!!.width
         bullet.y = flight!!.y+ (flight!!.height/2)
         bullets.add(bullet)
+    }
+
+    private fun saveIfHighScore() {
+        if (prefs.getInt("highscore", 0) < score) {
+            val editor = prefs.edit()
+            editor.putInt("highscore", score)
+            editor.apply()
+        }
     }
 }

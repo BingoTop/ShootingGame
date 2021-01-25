@@ -9,7 +9,7 @@ class Background internal constructor(screenX:Int, screenY:Int, res: Resources) 
     var x = 0
     var y = 0
     init{
-        background = BitmapFactory.decodeResource(res, R.drawable.background1)
+        background = BitmapFactory.decodeResource(res, R.drawable.background)
         background = Bitmap.createScaledBitmap(background, screenX, screenY, false)
     }
 }
